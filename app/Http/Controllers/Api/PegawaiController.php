@@ -8,7 +8,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Pegawai_10144;
 use Illuminate\Support\Facades\DB;
-use Hash;
+use Illuminate\Support\Facades\Hash;;
 
 class PegawaiController extends Controller
 {
@@ -68,6 +68,32 @@ class PegawaiController extends Controller
             'message' => 'Pegawai Not Found',
             'data' => null
         ], 404); // return message saat data pegawai tidak ditemukan
+    }
+
+    public function cariPegawai_Shift()
+    {
+        $pegawai = DB::table('pegawai_10144s')
+                    ->leftJoin('detail__jadwal_10144s', 'detail__jadwal_10144s.id_pegawai', '=', 'pegawai_10144s.id_pegawai')
+                    ->leftJoin('jadwal__pegawai_10144s', 'jadwal__pegawai_10144s.id_jadwal_increment', '=', 'detail__jadwal_10144s.id_jadwal_increment')
+                    ->select('pegawai_10144s.id_pegawai', 'pegawai_10144s.nama_pegawai', 'pegawai_10144s.alamat_pegawai')
+                    ->groupBy('pegawai_10144s.id_pegawai')
+                    ->whereNotIn('pegawai_10144s.id_pegawai', [6])
+                    ->having(DB::raw('count(detail__jadwal_10144s.id_pegawai)'), '<', 6)
+                    ->get();
+                    // ->count();
+
+        if(!is_null($pegawai))
+        {
+            return response([
+                'message' => 'Retrieve pegawai Success',
+                'data' => $pegawai
+            ], 200);
+        } // return data detail_jadwal yang ditemukan dalam bentuk json
+
+        return response([
+            'message' => 'Pegawai Not Found',
+            'data' => null
+        ], 404); // return message saat data detail_jadwal tidak ditemukan
     }
 
     public function store(Request $request)
@@ -150,16 +176,21 @@ class PegawaiController extends Controller
             'nama_pegawai' => 'required|max:100',
             'nomor_telepon_pegawai' => 'required|numeric|digits_between:10,13|starts_with:08',
             'alamat_pegawai' => 'required|max:200',
-            'email_pegawai' => 'required|email:rfc,dns',
+            'email_pegawai' => 'required',
             'tanggal_lahir_pegawai' => 'required|date_format:Y-m-d',
-            'foto_pegawai' => 'required',
+            'foto_pegawai' => 'mimes:jpg,png,jpeg|image',
             'jenis_kelamin_pegawai' => 'required|max:10',
-            'password_pegawai' => 'required'
+            'password_pegawai' => 'nullable'
         ]); // membuat rule validasi input
 
         if($validate->fails())
             return response(['message' => $validate->errors()], 400); // return error invalid input
-        $passwordHash = Hash::make($request->password_pegawai);
+
+
+        if(isset($request->password_pegawai)){
+            $updateData['password_pegawai'] = bcrypt($request->password_pegawai);
+            $pegawai->password_pegawai = $updateData['password_pegawai'];
+        }
 
         $pegawai->nama_pegawai = $updateData['nama_pegawai'];  
         $pegawai->nomor_telepon_pegawai = $updateData['nomor_telepon_pegawai'];  
@@ -171,7 +202,7 @@ class PegawaiController extends Controller
             $pegawai->foto_pegawai = $uploadFotoPegawai;
         }
         $pegawai->jenis_kelamin_pegawai = $updateData['jenis_kelamin_pegawai'];
-        $pegawai->password_pegawai = $passwordHash;
+        // $pegawai->password_pegawai = $passwordHash;
 
         if($pegawai->save())
         {

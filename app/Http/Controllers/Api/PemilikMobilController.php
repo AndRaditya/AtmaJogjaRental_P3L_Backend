@@ -48,7 +48,6 @@ class PemilikMobilController extends Controller
             'data' => null
         ], 404); // return message saat data pemilik tidak ditemukan
     }
-
     
     public function show($id_pemilik_mobil)
     {

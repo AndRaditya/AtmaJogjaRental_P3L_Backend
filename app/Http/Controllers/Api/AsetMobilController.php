@@ -9,33 +9,15 @@ use Illuminate\Support\Facades\Validator;
 use App\Models\Aset_Mobil_10144;
 use Illuminate\Support\Facades\DB;
 use App\Models\Pemilik_Mobil_10144;
+use Carbon\Carbon;
 
 class AsetMobilController extends Controller
 {
-    // public function index()
-    // {
-    //     $aset_mobils = Aset_Mobil_10144::all(); // mengambil semua data aset_mobil
-    //     // $aset_mobils = Aset_Mobil_10144::with('asetMobil_Pemilik')->get(); 
-
-    //     if(count($aset_mobils) > 0)
-    //     {
-    //         return response([
-    //             'message' => 'Retrieve All Success',
-    //             'data' => $aset_mobils
-    //         ], 200);
-    //     } // return data semua aset mobil dalam bentuk json
-
-    //     return response([
-    //         'message' => 'Empty',
-    //         'data' => null
-    //     ], 400); // return message data aset mobil kosong
-    // }
-
     public function index()
     {
         $aset_mobils = DB::table('aset__mobil_10144s')
                         ->leftJoin('pemilik__mobil_10144s', 'aset__mobil_10144s.id_pemilik_mobil', '=', 'pemilik__mobil_10144s.id_pemilik_mobil')
-                        ->select('aset__mobil_10144s.*', 'pemilik__mobil_10144s.id_pemilik_mobil', 'pemilik__mobil_10144s.nama_pemilik_mobil', 'aset__mobil_10144s.id_pemilik_mobil')
+                        ->select('aset__mobil_10144s.*', 'pemilik__mobil_10144s.*', 'aset__mobil_10144s.id_pemilik_mobil')
                         ->get(); // mengambil semua data aset_mobil
 
         // $aset_mobils = Aset_Mobil_10144::with('asetMobil_Pemilik')->get(); 
@@ -53,7 +35,30 @@ class AsetMobilController extends Controller
             'data' => null
         ], 400); // return message data aset mobil kosong
     }
+    
+    public function mobilTersedia()
+    {
+        $aset_mobils = DB::table('aset__mobil_10144s')
+                        ->leftJoin('pemilik__mobil_10144s', 'aset__mobil_10144s.id_pemilik_mobil', '=', 'pemilik__mobil_10144s.id_pemilik_mobil')
+                        ->select('aset__mobil_10144s.*', 'pemilik__mobil_10144s.*', 'aset__mobil_10144s.id_pemilik_mobil')
+                        ->where('aset__mobil_10144s.status_mobil', 'Tersedia')
+                        ->get(); // mengambil semua data aset_mobil
 
+        // $aset_mobils = Aset_Mobil_10144::with('asetMobil_Pemilik')->get(); 
+
+        if(count($aset_mobils) > 0)
+        {
+            return response([
+                'message' => 'Retrieve All Success',
+                'data' => $aset_mobils
+            ], 200);
+        } // return data semua aset mobil dalam bentuk json
+
+        return response([
+            'message' => 'Empty',
+            'data' => null
+        ], 400); // return message data aset mobil kosong
+    }
 
     public function show($id_aset_mobil)
     {
@@ -75,6 +80,27 @@ class AsetMobilController extends Controller
         ], 404); // return message saat data aset mobil tidak ditemukan
     }
 
+    public function cariKontrak(){
+        $pemilik = DB::table('aset__mobil_10144s')
+                        ->join('pemilik__mobil_10144s', 'aset__mobil_10144s.id_pemilik_mobil', '=', 'pemilik__mobil_10144s.id_pemilik_mobil')
+                        ->select('aset__mobil_10144s.*', 'pemilik__mobil_10144s.*')
+                        ->whereRaw("DATEDIFF(pemilik__mobil_10144s.periode_kontrak_akhir_mobil, '".Carbon::now()."') < 30")
+                        ->get(); // mengambil semua data aset_mobil
+
+        if(!is_null($pemilik))
+        {
+            return response([
+                'message' => 'Retrieve Pemilik Success',
+                'data' => $pemilik
+            ], 200);
+        } // return data pemilik yang ditemukan dalam bentuk json
+
+        return response([
+            'message' => 'Pemilik Not Found',
+            'data' => null
+        ], 404); // return message saat data pemilik tidak ditemukan
+    }
+
     public function store(Request $request)
     {
         $storeData = $request->all(); // mengambil semua input dari api client
@@ -90,14 +116,19 @@ class AsetMobilController extends Controller
             'fasilitas_mobil' => 'required',
             'nomor_stnk_mobil' => 'numeric',
             'harga_sewa_mobil' => 'required',
-            'volume_bagasi_mobil' => 'numeric'
+            'volume_bagasi_mobil' => 'numeric',
+            'foto_mobil' => 'max:1024|mimes:jpg,png,jpeg|image',
+            'status_mobil' => 'required',
+            'id_pemilik_mobil' => 'nullable'
         ]); // membuat rule validasi input
         
         if($validate->fails())
             return response(['message' => $validate->errors()], 400); // return error invalid input
         
+        $uploadFotoMobil = $request->foto_mobil->store('img_mobil', ['disk' => 'public']);
+
         $aset_mobil = Aset_Mobil_10144::create([
-            // 'id_pemilik_mobil' => $request->id_pemilik_mobil,
+            'id_pemilik_mobil' => $request->id_pemilik_mobil,
             'plat_nomor_mobil' => $request->plat_nomor_mobil,
             'nama_mobil' => $request->nama_mobil,
             'tipe_mobil' => $request->tipe_mobil,
@@ -110,6 +141,8 @@ class AsetMobilController extends Controller
             'nomor_stnk_mobil' => $request->nomor_stnk_mobil,
             'harga_sewa_mobil' => $request->harga_sewa_mobil,
             'volume_bagasi_mobil' => $request->volume_bagasi_mobil,
+            'foto_mobil' => $uploadFotoMobil,
+            'status_mobil' => $request->status_mobil,
         ]);
 
         return response([
@@ -169,11 +202,33 @@ class AsetMobilController extends Controller
             'fasilitas_mobil' => 'required|max:100',
             'nomor_stnk_mobil' => 'numeric',
             'harga_sewa_mobil' => 'required',
-            'volume_bagasi_mobil' => 'numeric'
+            'volume_bagasi_mobil' => 'numeric',
+            'foto_mobil' => 'mimes:jpg,png,jpeg|image',
+            'status_mobil' => 'nullable',
         ]); // membuat rule validasi input
 
         if($validate->fails())
             return response(['message' => $validate->errors()], 400); // return error invalid input
+
+        $cariStatusMobil = DB::table('detail__transaksi__mobil_10144s')
+                            ->where('id_aset_mobil', $id_aset_mobil)
+                            ->select('id_aset_mobil')
+                            ->first();
+
+        $countStatusMobil = DB::table('detail__transaksi__mobil_10144s')
+                            ->where('id_aset_mobil', $id_aset_mobil)
+                            ->count('id_aset_mobil');
+
+        if($countStatusMobil > 1){
+            $tempStatus = '1 Mobil dipakai banyak detail transaksi';
+        }else if(!is_null($cariStatusMobil)){
+            $tempStatus = 'Sibuk';
+        }else  if (isset($request->status_mobil)){
+            $tempStatus = $request->status_mobil;
+        }
+        else{
+            $tempStatus = $updateData['status_mobil'];
+        }
 
         $aset_mobil->plat_nomor_mobil = $updateData['plat_nomor_mobil'];  
         $aset_mobil->id_pemilik_mobil = $updateData['id_pemilik_mobil'];  
@@ -188,6 +243,11 @@ class AsetMobilController extends Controller
         $aset_mobil->nomor_stnk_mobil = $updateData['nomor_stnk_mobil'];
         $aset_mobil->harga_sewa_mobil = $updateData['harga_sewa_mobil'];
         $aset_mobil->volume_bagasi_mobil = $updateData['volume_bagasi_mobil'];
+        if(isset($request->foto_mobil)){
+            $uploadFotoMobil = $request->foto_mobil->store('img_mobil', ['disk' => 'public']);
+            $aset_mobil->foto_mobil = $uploadFotoMobil;
+        }
+        $aset_mobil->status_mobil = $tempStatus;
 
         if($aset_mobil->save())
         {

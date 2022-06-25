@@ -7,34 +7,18 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Detail_Jadwal_10144;
+use App\Models\Jadwal_Pegawai_10144;
+use App\Models\Pegawai_10144;
 use Illuminate\Support\Facades\DB;
 
 class DetailJadwalController extends Controller
 {
-    // public function index()
-    // {
-    //     $detail_jadwals = Detail_Jadwal_10144::all(); // mengambil semua data details
-
-    //     if(count($detail_jadwals) > 0)
-    //     {
-    //         return response([
-    //             'message' => 'Retrieve All Success',
-    //             'data' => $detail_jadwals
-    //         ], 200);
-    //     } // return data semua details dalam bentuk json
-
-    //     return response([
-    //         'message' => 'Empty',
-    //         'data' => null
-    //     ], 400); // return message data details kosong
-    // }
-
     public function index()
     {
         $detail_jadwals = DB::table('detail__jadwal_10144s')
                         ->join('pegawai_10144s', 'detail__jadwal_10144s.id_pegawai', '=', 'pegawai_10144s.id_pegawai')
                         ->join('jadwal__pegawai_10144s', 'detail__jadwal_10144s.id_jadwal_increment', '=', 'jadwal__pegawai_10144s.id_jadwal_increment')
-                        ->select('detail__jadwal_10144s.*', 'pegawai_10144s.nama_pegawai', 'jadwal__pegawai_10144s.id_jadwal')
+                        ->select('detail__jadwal_10144s.*', 'pegawai_10144s.*', 'jadwal__pegawai_10144s.*')
                         ->get(); // mengambil semua data aset_mobil
                         
         if(count($detail_jadwals) > 0)
@@ -73,11 +57,23 @@ class DetailJadwalController extends Controller
     {
         $storeData = $request->all(); // mengambil semua input dari api client
         $validate = Validator::make($storeData, [
-            'keterangan_jadwal' => 'required|max:255'
+            'keterangan_jadwal' => 'required|max:255',
+            'id_pegawai' => 'required',
+            'id_jadwal_increment' => 'required'
         ]); // membuat rule validasi input
 
+        $cariIDJadwal =  Detail_Jadwal_10144::where('id_jadwal_increment',$request->id_jadwal_increment)
+                        ->where('id_pegawai',$request->id_pegawai)->first();
+
         if($validate->fails())
-            return response(['message' => $validate->errors()], 400); // return error invalid input
+        return response(['message' => $validate->errors()], 400); // return error invalid input
+    
+        if($cariIDJadwal){
+            return response([
+                'message' => 'Jadwal Sudah Terambil',
+                'data' => null
+            ], 404); // return data detail baru dalam bentuk json
+        }
         
         $detail_jadwal = Detail_Jadwal_10144::create([
             'id_pegawai' => $request->id_pegawai,
@@ -88,6 +84,7 @@ class DetailJadwalController extends Controller
             'message' => 'Add detail jadwal Success',
             'data' => $detail_jadwal
         ], 200); // return data detail baru dalam bentuk json
+
     }
 
     public function destroy($id_detail_jadwal)
@@ -129,13 +126,27 @@ class DetailJadwalController extends Controller
 
         $updateData = $request->all(); // mengambil semua input dari api client
         $validate = Validator::make($updateData, [
-            'keterangan_jadwal' => 'required|max:255'
+            'keterangan_jadwal' => 'required|max:255',
+            'id_pegawai' => 'required',
+            'id_jadwal_increment' => 'required'
         ]); // membuat rule validasi input
+
+        $cariIDJadwal =  Detail_Jadwal_10144::where('id_jadwal_increment', $request->id_jadwal_increment)
+                    ->where('id_pegawai', $request->id_pegawai)->first();
 
         if($validate->fails())
             return response(['message' => $validate->errors()], 400); // return error invalid input
 
+        if($cariIDJadwal){
+            return response([
+                'message' => 'Jadwal Sudah Terambil',
+                'data' => null
+            ], 404); // return data detail baru dalam bentuk json
+        }
+        
         $detail_jadwal->keterangan_jadwal = $updateData['keterangan_jadwal'];  
+        $detail_jadwal->id_pegawai = $updateData['id_pegawai'];  
+        $detail_jadwal->id_jadwal_increment = $updateData['id_jadwal_increment'];  
 
         if($detail_jadwal->save())
         {

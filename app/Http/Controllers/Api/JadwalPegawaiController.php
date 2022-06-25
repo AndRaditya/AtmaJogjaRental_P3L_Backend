@@ -116,12 +116,24 @@ class JadwalPegawaiController extends Controller
         $updateData = $request->all(); // mengambil semua input dari api client
         $validate = Validator::make($updateData, [
             'hari_shift' => 'required|max:20',
-            'waktu_shift' => 'required'
+            'waktu_shift' => 'required',
+            'id_jadwal'
         ]); // membuat rule validasi input
+
+        $hari =  $request->hari_shift;
+        $waktu = $request->waktu_shift;
+        
+        if($waktu === '08:00:00'){
+            $id = $hari . " - 1";
+        }else if($waktu === '15:00:00'){
+            $id = $hari . " - 2";
+        }
 
         if($validate->fails())
             return response(['message' => $validate->errors()], 400); // return error invalid input
 
+
+        $jadwal->id_jadwal = $id; 
         $jadwal->hari_shift = $updateData['hari_shift']; 
         $jadwal->waktu_shift = $updateData['waktu_shift']; 
 

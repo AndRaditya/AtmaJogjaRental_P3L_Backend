@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Customer_10144;
+use App\Models\Pegawai_10144;
+use App\Models\Promo_10144;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Carbon\Carbon;
-use App\Models\Customer_10144;
-use App\Models\Promo_10144;
-use App\Models\Pegawai_10144;
+
 // use App\Models\Detail_Transaksi_Mobil_10144;
 
 class Transaksi_Mobil_10144 extends Model
@@ -15,10 +16,9 @@ class Transaksi_Mobil_10144 extends Model
     use HasFactory;
     protected $primaryKey = 'id_transaksi_increment';
     protected $fillable = [
-        'id_transaksi_increment', 'id_transaksi_mobil', 
+        'id_transaksi_increment', 'id_transaksi_mobil',
         'id_customer_increment', 'id_pegawai',
-        'id_promo', 'status_transaksi', 'bukti_transfer',
-        'tanggal_transaksi','metode_pembayaran'
+        'id_promo', 'tanggal_transaksi', 'metode_pembayaran',
     ];
 
     public function Transaksi_Promo()
@@ -43,14 +43,14 @@ class Transaksi_Mobil_10144 extends Model
 
     public function getCreatedAtAttribute()
     {
-        if(!is_null($this->attributes['created_at'])){
+        if (!is_null($this->attributes['created_at'])) {
             return Carbon::parse($this->attributes['created_at'])->format('Y-m-d H:i:s');
         }
     }
 
     public function getUpdatedAtAttribute()
     {
-        if(!is_null($this->attributes['updated_at'])){
+        if (!is_null($this->attributes['updated_at'])) {
             return Carbon::parse($this->attributes['updated_at'])->format('Y-m-d H:i:s');
         }
     }

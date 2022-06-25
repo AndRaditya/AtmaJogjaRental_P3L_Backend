@@ -15,8 +15,8 @@ return new class extends Migration
     {
         Schema::create('jadwal__pegawai_10144s', function (Blueprint $table) {
             $table->id('id_jadwal_increment');
-            $table->string('id_jadwal',50);
-            $table->string('hari_shift',10);
+            $table->string('id_jadwal', 50);
+            $table->string('hari_shift', 10);
             $table->time('waktu_shift');
             $table->timestamps();
         });

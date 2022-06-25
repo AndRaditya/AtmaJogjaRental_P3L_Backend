@@ -17,13 +17,12 @@ return new class extends Migration
             $table->id('id_detail_jadwal');
             $table->unsignedBigInteger('id_pegawai');
             $table->unsignedBigInteger('id_jadwal_increment')->nullable();
-            
-            $table->string('keterangan_jadwal',255);
+
+            $table->string('keterangan_jadwal', 255);
             $table->timestamps();
         });
 
-        Schema::table('detail__jadwal_10144s', function($table)
-        {
+        Schema::table('detail__jadwal_10144s', function ($table) {
             $table->foreign('id_pegawai')
                 ->references('id_pegawai')->on('pegawai_10144s');
             $table->foreign('id_jadwal_increment')

@@ -8,7 +8,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Driver_10144;
 use Illuminate\Support\Facades\DB;
-use Hash;
+use Illuminate\Support\Facades\Hash;;
 
 class DriverController2 extends Controller
 {
